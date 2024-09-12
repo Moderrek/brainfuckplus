@@ -2,9 +2,13 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <conio.h>
 
 #define BF_CAPACITY 30000 /*30kB*/
 #define BF_LOOP_STACK 1024 /* Max amount of nested loops */
+
+#define CLEAR_CURR_LINE "\033[2K"
+#define LINE_UP "\033[F"
 
 typedef struct {
   unsigned char* memory;
@@ -18,32 +22,52 @@ typedef struct {
   bool warnings;
 } BFData;
 
-bool valid_ptr(BFData* data) {
-  return data->mem_ptr >= 0 && data->mem_ptr < BF_CAPACITY;
-}
-
 void print_mem(BFData* data) {
-  if (data->memdump) {
     if (data->max_used_ptr > BF_CAPACITY) {
       data->max_used_ptr = BF_CAPACITY - 1;
     }
-    fprintf(stdout, "\n\nMemory Dump (%d cells):\n", data->max_used_ptr + 1);
-    
+    fprintf(stdout, "\nMemory Dump (%d bytes):\n", data->max_used_ptr + 1);
     for (int i = 0; i < data->max_used_ptr + 1; i += 1) {
       if (data->mem_ptr == i) {
         fprintf(stdout, "[%d] ", data->memory[i]);
       } else {
         fprintf(stdout, " %d  ", data->memory[i]);
       }
-      
       if ((i+1) % 10 == 0) {
         fprintf(stdout, "\n");
       }
     }
-  }
+    fprintf(stdout, "\n\n");
 }
 
-void interpret(BFData* data, const char* code);
+void hide_mem(BFData* data) {
+    fprintf(stdout, CLEAR_CURR_LINE LINE_UP CLEAR_CURR_LINE LINE_UP CLEAR_CURR_LINE LINE_UP CLEAR_CURR_LINE);
+    for (int i = 0; i < data->max_used_ptr + 1; i += 1)
+      if ((i+1) % 10 == 0)
+        fprintf(stdout, CLEAR_CURR_LINE LINE_UP);
+    printf(CLEAR_CURR_LINE LINE_UP CLEAR_CURR_LINE);
+}
+
+void crash(BFData* data, const char* message, int code) {
+  fprintf(stderr, "ERROR: program crashed with code %d because: %s\n", code, message);
+  if (data->memdump)
+    print_mem(data);
+  exit(code);
+}
+
+void crash_file(BFData* data, const char* message, int code, const char* filename, int pos) {
+  fprintf(stderr, "%s:%d: ERROR: %s\n", filename, pos+1, message);
+  fprintf(stderr, "Program crashed with exit code %d\n", code);
+  if (data->memdump)
+    print_mem(data);
+  exit(code);
+}
+
+bool valid_ptr(BFData* data) {
+  return data->mem_ptr >= 0 && data->mem_ptr < BF_CAPACITY;
+}
+
+void interpret(BFData* data, const char* code, const char* filename);
 
 void interpet_file(BFData* data, const char* filename) {
   FILE* file = fopen(filename, "r");
@@ -57,15 +81,20 @@ void interpet_file(BFData* data, const char* filename) {
   fclose(file);
 
   file_buffer[4095] = '\0';
-  interpret(data, file_buffer);
+  interpret(data, file_buffer, filename);
 }
 
-void interpret(BFData* data, const char* code) {
+void interpret(BFData* data, const char* code, const char* filename) {
   int len = strlen(code);
 
   for (int i = 0; i < len; i += 1) {
     char cmd = code[i];
     switch (cmd) {
+    case '?':
+      print_mem(data);
+      getch();
+      hide_mem(data);
+      break;
     case '"':
       int start = ++i;
       int end = i;
@@ -74,12 +103,13 @@ void interpret(BFData* data, const char* code) {
         i++;
       }
       int size = end - start + 1;
-      char* filename = malloc(size);
-      filename[size-1] = '\0';
+      char* included_filename = malloc(size);
+      included_filename[size-1] = '\0';
       for (int i = start, j = 0; i < end; i += 1, j += 1) {
-        filename[j] = code[i];
+        included_filename[j] = code[i];
       }
-      interpet_file(data, filename);
+      interpet_file(data, included_filename);
+      free(included_filename);
       break;
     case '>':
       // Move pointer right
@@ -101,45 +131,46 @@ void interpret(BFData* data, const char* code) {
       break;
     case '+':
       if (data->memory[data->mem_ptr] == 255) {
-        fprintf(stderr, "ERROR: reached max value of single byte at %d. Use --memdump to view memory\n", data->mem_ptr);
-        goto end;
+        crash_file(data, 
+          data->memdump ? 
+          "reached maximal value of single byte" : 
+          "reached maximal value of single byte. Use --memdump to view memory",
+          1, filename, i
+        );
       }
       data->memory[data->mem_ptr]++;
       break;
     case '-':
       if (data->memory[data->mem_ptr] == 0) {
-        fprintf(stderr, "ERROR: reached min value of single byte at %d. Use --memdump to view memory\n", data->mem_ptr);
-        goto end;
+        crash_file(data, 
+          data->memdump ? 
+          "reached minimal value of single byte" : 
+          "reached minimal value of single byte. Use --memdump to view memory",
+          1, filename, i
+        );
       }
       data->memory[data->mem_ptr]--;
       break;
     case ',':
-      if (!valid_ptr(data)) {
-        fprintf(stderr, "ERROR: tried to write to cell which is out of memory\n");
-        goto end;
-      }
-      fprintf(stdout, "> ");
-      fscanf(stdin, "%c", data->memory + data->mem_ptr);
+      if (!valid_ptr(data))
+        crash_file(data, "tried to write to cell which is out of memory", 1, filename, i);
+      data->memory[data->mem_ptr] = getchar(); 
       break;
     case ';':
-      if (!valid_ptr(data)) {
-        fprintf(stderr, "ERROR: tried to write to cell which is out of memory\n");
-        goto end;
-      }
-      fprintf(stdout, "> ");
-      fscanf(stdin, "%d", data->memory + data->mem_ptr);
+      if (!valid_ptr(data))
+        crash_file(data, "tried to write to cell which is out of memory", 1, filename, i);
+      fprintf(stdout, "number > ");
+      scanf("%d", data->memory + data->mem_ptr);
       break;
     case '.':
       if (!valid_ptr(data)) {
-        fprintf(stderr, "ERROR: tried to read cell which is out of memory\n");
-        goto end;
+        crash_file(data, "tried to read cell which is out of memory", 1, filename, i);
       }
-      fprintf(stdout, "%c", data->memory[data->mem_ptr]);
+      putchar(data->memory[data->mem_ptr]);
       break;
     case ':':
       if (!valid_ptr(data)) {
-        fprintf(stderr, "ERROR: tried to read cell which is out of memory\n");
-        goto end;
+        crash_file(data, "tried to read cell which is out of memory", 1, filename, i);
       }
       fprintf(stdout, "%d", data->memory[data->mem_ptr]);
       break;
@@ -149,24 +180,21 @@ void interpret(BFData* data, const char* code) {
         while (loop_nesting > 0) {
           i++;
           if (i >= len) {
-            fprintf(stderr, "ERROR: unbalanced '['\n");
-            goto end;
+            crash_file(data, "unbalanced '['", 1, filename, i);
           }
           if (code[i] == '[') loop_nesting++;
           else if (code[i] == ']') loop_nesting--;
         }
       } else {
         if (data->loop_ptr + 1 >= BF_LOOP_STACK) {
-          fprintf(stderr, "ERROR: too many nested loops\n");
-          goto end;
+          crash_file(data, "too many nested loops", 1, filename, i);
         }
         data->loop_stack[++data->loop_ptr] = i;
       }
       break;
     case ']':
       if (data->loop_ptr == -1) {
-        fprintf(stderr, "ERROR: unmatched ']'\n");
-        goto end;
+        crash_file(data, "unmatched ']'", 1, filename, i);
       }
       if (data->memory[data->mem_ptr] != 0) {
         i = data->loop_stack[data->loop_ptr];
@@ -176,17 +204,14 @@ void interpret(BFData* data, const char* code) {
       break;
     }
   }
-
-end:
 }
 
 int main(int argc, char** argv) {
-  if (argc == 1) {
-    fprintf(stderr, "ERROR: no input file\n");
-    return 1;
-  }
   bool memory_dump = false;
   bool warnings = false;
+
+  // Iterate through arguments and find flags
+  int non_flags = 0;
   for (int i = 1; i < argc; i += 1) {
     if (strcmp(argv[i], "-memdump") == 0 || strcmp(argv[i], "--memdump") == 0) {
       memory_dump = true;
@@ -196,6 +221,12 @@ int main(int argc, char** argv) {
       warnings = true;
       continue;
     }
+    non_flags++;
+  }
+
+  if (non_flags == 0) {
+    fprintf(stderr, "ERROR: no input file\n");
+    return 1;
   }
 
   // Allocate all BF memory and stacks
@@ -223,6 +254,7 @@ int main(int argc, char** argv) {
     interpet_file(&bf_data, filename);
   }
 
-  print_mem(&bf_data);
+  if (bf_data.memdump)
+    print_mem(&bf_data);
   return 0;
 }
