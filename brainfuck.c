@@ -90,12 +90,13 @@ void interpret(BFData* data, const char* code, const char* filename) {
   for (int i = 0; i < len; i += 1) {
     char cmd = code[i];
     switch (cmd) {
-    case '?':
+    case '?': {
       print_mem(data);
       getch();
       hide_mem(data);
       break;
-    case '"':
+    }
+    case '"': {
       int start = ++i;
       int end = i;
       while (i < len && code[i] != '"') {
@@ -111,7 +112,8 @@ void interpret(BFData* data, const char* code, const char* filename) {
       interpet_file(data, included_filename);
       free(included_filename);
       break;
-    case '>':
+    }
+    case '>': {
       // Move pointer right
       data->mem_ptr++;
       // Check is pointer out of memory
@@ -121,7 +123,8 @@ void interpret(BFData* data, const char* code, const char* filename) {
       if (data->mem_ptr > data->max_used_ptr)
         data->max_used_ptr = data->mem_ptr;
       break;
-    case '<':
+    }
+    case '<': {
       // Move pointer left
       data->mem_ptr--;
       // Check is pointer out of memory
@@ -129,7 +132,8 @@ void interpret(BFData* data, const char* code, const char* filename) {
         fprintf(stderr, "WARNING: pointer go behing the memory, can cause fatal error. @ %d char\n", i);
       }
       break;
-    case '+':
+    }
+    case '+': {
       if (data->memory[data->mem_ptr] == 255) {
         crash_file(data, 
           data->memdump ? 
@@ -140,7 +144,8 @@ void interpret(BFData* data, const char* code, const char* filename) {
       }
       data->memory[data->mem_ptr]++;
       break;
-    case '-':
+    }
+    case '-': {
       if (data->memory[data->mem_ptr] == 0) {
         crash_file(data, 
           data->memdump ? 
@@ -151,30 +156,35 @@ void interpret(BFData* data, const char* code, const char* filename) {
       }
       data->memory[data->mem_ptr]--;
       break;
-    case ',':
+    }
+    case ',': {
       if (!valid_ptr(data))
         crash_file(data, "tried to write to cell which is out of memory", 1, filename, i);
       data->memory[data->mem_ptr] = getchar(); 
       break;
-    case ';':
+    }
+    case ';': {
       if (!valid_ptr(data))
         crash_file(data, "tried to write to cell which is out of memory", 1, filename, i);
       fprintf(stdout, "number > ");
       scanf("%d", data->memory + data->mem_ptr);
       break;
-    case '.':
+    }
+    case '.': {
       if (!valid_ptr(data)) {
         crash_file(data, "tried to read cell which is out of memory", 1, filename, i);
       }
       putchar(data->memory[data->mem_ptr]);
       break;
-    case ':':
+    }
+    case ':': {
       if (!valid_ptr(data)) {
         crash_file(data, "tried to read cell which is out of memory", 1, filename, i);
       }
       fprintf(stdout, "%d", data->memory[data->mem_ptr]);
       break;
-    case '[':
+    }
+    case '[': {
       if (data->memory[data->mem_ptr] == 0) {
         int loop_nesting = 1;
         while (loop_nesting > 0) {
@@ -192,7 +202,8 @@ void interpret(BFData* data, const char* code, const char* filename) {
         data->loop_stack[++data->loop_ptr] = i;
       }
       break;
-    case ']':
+    }
+    case ']': {
       if (data->loop_ptr == -1) {
         crash_file(data, "unmatched ']'", 1, filename, i);
       }
@@ -202,6 +213,7 @@ void interpret(BFData* data, const char* code, const char* filename) {
         data->loop_ptr--;
       }
       break;
+    }
     }
   }
 }
@@ -213,6 +225,31 @@ int main(int argc, char** argv) {
   // Iterate through arguments and find flags
   int non_flags = 0;
   for (int i = 1; i < argc; i += 1) {
+    int arg_len = strlen(argv[i]);
+    
+    bool is_flag = false;
+    if (arg_len > 0 && argv[i][0] == '-')
+      is_flag = true;
+    if (arg_len > 1 && argv[i][0] == '-' && argv[i][1] == '-')
+      is_flag = true;
+
+    if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "--help") == 0) {
+      fprintf(
+        stdout,
+        "Usage: %s [options] file...\n"
+        "Options:\n"
+        "  --help      Display this information.\n"
+        "  --version   Display interpreter version information.\n"
+        "  --memdump   Print memory dump after program execution.\n"
+        "  --warning   Print warnings during program execution.\n",
+        argv[0]
+      );
+      exit(0);
+    }
+    if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "-version") == 0 || strcmp(argv[i], "--version") == 0) {
+      fprintf(stdout, "BrainFuckPlus Interpreter v1.0 by Tymon \"MODERR\" Wozniak\n");
+      exit(0);
+    }
     if (strcmp(argv[i], "-memdump") == 0 || strcmp(argv[i], "--memdump") == 0) {
       memory_dump = true;
       continue;
@@ -221,17 +258,26 @@ int main(int argc, char** argv) {
       warnings = true;
       continue;
     }
-    non_flags++;
+
+    if (!is_flag)
+      non_flags++;
+    else {
+      fprintf(stderr, "ERROR: unknown flag %s. Use --help to see all flags.\n", argv[i]);
+      exit(1);
+    }
   }
 
   if (non_flags == 0) {
-    fprintf(stderr, "ERROR: no input file\n");
-    return 1;
+    fprintf(stderr,
+      "Usage: %s [options] <file.bf>\n",
+      argv[0]
+    );
+    exit(EXIT_FAILURE);
   }
 
   // Allocate all BF memory and stacks
   unsigned char memory[BF_CAPACITY] = {0};
-  int loop_stack[BF_LOOP_STACK];
+  int loop_stack[BF_LOOP_STACK] = {0};
 
   BFData bf_data = {
     .memory = memory,
