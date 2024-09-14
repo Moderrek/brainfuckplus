@@ -1,0 +1,3 @@
+;>;       read two bytes as int
+[-<+>]<   perform add
+:         print result as int
