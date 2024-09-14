@@ -2,9 +2,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include <conio.h>
 
 #include "interpreter.h"
+#include "memory.h"
 
 int main(int argc, char** argv) {
   bool memory_dump = false;

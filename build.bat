@@ -1,1 +1,0 @@
-gcc -o bfc ./src/main.c -O3 -Wall -Wextra -pedantic -std=c11 -s -static

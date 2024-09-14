@@ -1,6 +1,8 @@
 #ifndef STATE_H_INCLUDED
 #define STATE_H_INCLUDED
 
+#include <stdbool.h>
+
 typedef struct {
   unsigned char* memory;
   int* loop_stack;

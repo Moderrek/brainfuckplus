@@ -1,2 +1,46 @@
-*.exe
+# Build dirs
+/build/
+/CMakeFiles/
+/CMakeCache.txt
+/cmake_install.cmake
+/Makefile
+
+# IDE's
+/*.cbp
+/*.ninja
+/*.sln
+/*.vcxproj
+/*.vcxproj.filters
+/*.vcxproj.user
+/compile_commands.json
+
+# Temp
+*.swp
+*.swo
+*.bak
+*.log
+*.tmp
+
+# Compilation logs
+CMakeError.log
+CMakeOutput.log
+
+# Binaries and objects
 *.o
+*.obj
+*.exe
+*.out
+*.so
+*.a
+*.lib
+*.dll
+*.pdb
+
+# IDE dirs
+/.vscode/
+/.idea/
+/_debug/
+/_release/
+/x64/
+/Debug/
+/Release/
