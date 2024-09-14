@@ -5,8 +5,6 @@ set(CMAKE_C_STANDARD 99)
 
 set(SRCS
  src/main.c
- src/crash.h
- src/crash.c
  src/memory.h
  src/memory.c
  src/interpreter.h
