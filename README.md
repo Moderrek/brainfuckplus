@@ -3,6 +3,12 @@
 Brainfuck+ is an **extended** version of the classic [Brainfuck](https://en.wikipedia.org/wiki/Brainfuck) language,  
 featuring additional functionalities such as the `--memdump` and `--warning` flags, as well as debugging and analysis tools. This interpreter allows you to run programs written in BrainfuckPlus, providing useful options for debugging and inspecting program execution.
 
+```bf
+;>;       read two bytes as int
+[-<+>]<   perform add
+:         print result as int
+```
+
 ## Commands
 
 BrainfuckPlus uses the same basic commands as Brainfuck, with potential for extensions. Here are the core commands:
