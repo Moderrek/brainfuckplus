@@ -31,7 +31,7 @@ BrainfuckPlus uses the same basic commands as Brainfuck, with potential for exte
 
 To run a BrainfuckPlus program, use the following command:
 ```bash
-./brainfuckplus [options] <file.bf>...
+./brainfuckplus [options] <file>...
 ```
 
 ### Example:
@@ -52,7 +52,6 @@ To run a BrainfuckPlus program, use the following command:
 |---------------|-------------------------------------------------------------------------|
 | `--memdump`   | Displays a memory dump after program execution                          |
 | `--warning`   | Shows warnings during execution                                         |
-| `--max-steps` | Limits the number of instructions executed by the program               |
 | `--version`   | Displays the version of the interpreter                                 |
 | `--help`      | Displays the possible flags                                             |
 
