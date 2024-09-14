@@ -25,3 +25,15 @@ void hide_mem(BFData* data) {
 bool valid_ptr(BFData* data) {
   return data->mem_ptr >= 0 && data->mem_ptr < BF_CAPACITY;
 }
+
+void dump_mem(BFData* data, const char* filename) {
+  FILE* file = fopen(filename, "wb");
+  if (file == NULL) {
+    fprintf(stderr, "ERROR: cannot dump memory, failed to open file: %s\n", filename);
+    return;
+  }
+  for (int i = 0; i < data->max_used_ptr + 1; i += 1) {
+    fprintf(file, "%c", data->memory[i]);
+  }
+  fclose(file);
+}

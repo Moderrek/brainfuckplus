@@ -11,8 +11,10 @@ typedef struct {
   int mem_ptr;
   int max_used_ptr;
 
-  bool memdump;
+  bool debug;
   bool warnings;
+  bool memdump;
+  char* memdump_file;
 } BFData;
 
 #endif

@@ -30,9 +30,9 @@ BrainfuckPlus uses the same basic commands as Brainfuck, with potential for exte
 
 ## Features
 
-- **`--memdump`**: Displays a memory dump after program execution.
 - **`--warning`**: Shows warnings if potential issues are detected during execution.
-- **`--version`**: Displays the interpreter version.
+- **`--memdump`**: Displays a memory dump after program execution.
+- **`--memdumpfile=<filename>`**: Dump memory into file after program execution.
 
 ## Usage
 
@@ -55,12 +55,13 @@ To run a BrainfuckPlus program, use the following command:
 
 ## Flags
 
-| Flag          | Description                                                             |
-|---------------|-------------------------------------------------------------------------|
-| `--memdump`   | Displays a memory dump after program execution                          |
-| `--warning`   | Shows warnings during execution                                         |
-| `--version`   | Displays the version of the interpreter                                 |
-| `--help`      | Displays the possible flags                                             |
+| Flag                       | Description                                                |
+|----------------------------|------------------------------------------------------------|
+| `--memdump`                | Displays a memory dump after program execution             |
+| `--memdumpfile=<filename>` | Dump memory into file after program execution.             |
+| `--warning`                | Shows warnings during execution                            |
+| `--version`                | Displays the version of the interpreter                    |
+| `--help`                   | Displays the possible flags                                |
 
 ## Contributing
 

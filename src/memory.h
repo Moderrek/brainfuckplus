@@ -14,5 +14,6 @@
 void print_mem(BFData* data);
 void hide_mem(BFData* data);
 bool valid_ptr(BFData* data);
+void dump_mem(BFData* data, const char* filename);
 
 #endif // MEMORY_H_INCLUDED

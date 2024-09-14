@@ -123,6 +123,8 @@ bool interpret(BFData* data, const char* code, const char* filename) {
           fprintf(stderr, "%s:%d ERROR: tried to write to cell which is out of memory, ptr = %d\n", filename, i, data->mem_ptr);
           return false;
         }
+        if (data->debug)
+          printf("char > ");
         data->memory[data->mem_ptr] = getchar();
         break;
       }
@@ -132,8 +134,9 @@ bool interpret(BFData* data, const char* code, const char* filename) {
           fprintf(stderr, "%s:%d ERROR: tried to write to cell which is out of memory, ptr = %d\n", filename, i, data->mem_ptr);
           return false;
         }
-        printf("byte > ");
-        scanf("%d", data->memory + data->mem_ptr);
+        if (data->debug)
+          printf("uint8 > ");
+        scanf_s("%d", data->memory + data->mem_ptr);
         break;
       }
     case '.':
