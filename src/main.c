@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
 
   if (non_flags == 0) {
     fprintf(stderr,
-      "Usage: %s [options] <file.bf>\n",
+      "Usage: %s [options] <file>...\n",
       argv[0]
     );
     exit(EXIT_FAILURE);
@@ -83,9 +83,9 @@ int main(int argc, char** argv) {
       continue;
     if (strcmp(argv[i], "--warning") == 0 || strcmp(argv[i], "-warning") == 0 || strcmp(argv[i], "-w") == 0)
       continue;
+    
     const char* filename = argv[i];
-    bool success = interpret_file(&bf_data, filename);
-    if (!success) {
+    if (!interpret_file(&bf_data, filename)) {
       fprintf(stderr, "ERROR: cannot interpret file: %s\n", filename);
       break;
     }

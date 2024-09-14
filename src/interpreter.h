@@ -5,7 +5,6 @@
 
 #include "state.h"
 
-void action_breakpoint(BFData* data);
 bool interpret(BFData* data, const char* code, const char* filename);
 bool interpret_file(BFData* data, const char* filename);
 

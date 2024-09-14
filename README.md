@@ -19,6 +19,7 @@ BrainfuckPlus uses the same basic commands as Brainfuck, with potential for exte
 | `;`     | Accept int in range <0; 255>, storing its value at the memory pointer             |
 | `[`     | Jump forward to the command after the corresponding `]` if the byte at the memory pointer is 0 |
 | `]`     | Jump back to the command after the corresponding `[` if the byte at the memory pointer is nonzero |
+| `$`     | Stops execution of script                                                         |
 
 ## Features
 
