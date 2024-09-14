@@ -20,12 +20,13 @@ BrainfuckPlus uses the same basic commands as Brainfuck, with potential for exte
 | `+`     | Increment the byte at the memory pointer                                          |
 | `-`     | Decrement the byte at the memory pointer                                          |
 | `.`     | Output the byte at the memory pointer (usually as an ASCII character)             |
-| `:`     | Output the int at the memory pointer                                              |
+| `:`*    | Output the int at the memory pointer                                              |
 | `,`     | Accept one byte of input, storing its value at the memory pointer                 |
-| `;`     | Accept int in range <0; 255>, storing its value at the memory pointer             |
+| `;`*    | Accept int in range <0; 255>, storing its value at the memory pointer             |
 | `[`     | Jump forward to the command after the corresponding `]` if the byte at the memory pointer is 0 |
 | `]`     | Jump back to the command after the corresponding `[` if the byte at the memory pointer is nonzero |
-| `$`     | Stops execution of script                                                         |
+| `$`*    | Stops execution of script                                                         |
+| `?`*    | Pauses execution of script and prints memory dump. Press enter to continue.       |
 
 ## Features
 
