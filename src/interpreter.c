@@ -136,7 +136,7 @@ bool interpret(BFData* data, const char* code, const char* filename) {
         }
         if (data->debug)
           printf("uint8 > ");
-        scanf_s("%d", data->memory + data->mem_ptr);
+        scanf("%d", data->memory + data->mem_ptr);
         break;
       }
     case '.':
