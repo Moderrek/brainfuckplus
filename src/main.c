@@ -50,7 +50,7 @@ int main(const int argc, char** argv) {
       return EXIT_SUCCESS;
     }
     if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "-version") == 0 || strcmp(argv[i], "--version") == 0) {
-      printf("BrainFuckPlus Interpreter v1.1 by Tymon \"MODERR\" Wozniak\n");
+      printf("BrainFuckPlus Interpreter v1.2 by Tymon \"MODERR\" Wozniak\n");
       free(is_flag);
       return EXIT_SUCCESS;
     }
@@ -94,9 +94,10 @@ int main(const int argc, char** argv) {
   }
 
   // Allocate all BF memory and stacks
-  unsigned char memory[BF_CAPACITY] = {0};
-  int loop_stack[BF_LOOP_STACK] = {0};
-  
+  unsigned char* memory = (unsigned char*) malloc(BF_CAPACITY);
+  int* loop_stack = (int*) malloc(BF_LOOP_STACK);
+  memset(memory, 0, BF_CAPACITY);
+  memset(loop_stack, 0, BF_LOOP_STACK);
   bf_data.memory = memory;
   bf_data.loop_stack = loop_stack;
 
@@ -115,5 +116,7 @@ int main(const int argc, char** argv) {
   if (bf_data.memdump_file != NULL)
     dump_mem(&bf_data, bf_data.memdump_file);
   free(is_flag);
+  free(memory);
+  free(loop_stack);
   return EXIT_SUCCESS;
 }

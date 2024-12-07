@@ -8,22 +8,45 @@
 
 bool interpret_file(BFData* data, const char* filename) {
   FILE* file = fopen(filename, "r");
+  // Cannot open file
   if (file == NULL) {
     fprintf(stderr, "ERROR: %s: cannot open file: %s\n", filename, strerror(errno));
     return false;
   }
-  // TODO: dynamic buffer  
-  char file_buffer[4096] = {0};
-  fread(file_buffer, sizeof(char), 4096, file);
+
+  // Check file size
+  fseek(file, 0, SEEK_END);
+  size_t file_size = ftell(file);
+  rewind(file);
+
+  // Allocate buffer
+  char* file_buffer = (char*) malloc(file_size + 1);
+  if (!file_buffer) {
+    fclose(file);
+    fprintf(stderr, "ERROR: %s: cannot allocate %zu bytes.\n", filename, file_size);
+    return false;
+  }
+
+  // Read whole content into buffer
+  size_t read_size = fread(file_buffer, 1, file_size, file);
+  if (read_size != file_size) {
+    fprintf(stderr, "ERROR: %s: failed to read file content. read %zu bytes, expected %zu bytes", filename, read_size, file_size);
+    fclose(file);
+    free(file_buffer);
+    return false;
+  }
+  file_buffer[file_size] = '\0';
   fclose(file);
 
-  file_buffer[4095] = '\0';
-  return interpret(data, file_buffer, filename);
+  bool result = interpret(data, file_buffer, file_size, filename);
+
+  free(file_buffer);
+  
+  return result;
 }
 
-bool interpret(BFData* data, const char* code, const char* filename) {
-  const int len = strlen(code);
-  for (int i = 0; i < len; i += 1) {
+bool interpret(BFData* data, const char* code, size_t code_length, const char* filename) {
+  for (size_t i = 0; i < code_length; i += 1) {
     switch (code[i]) {
     case '$':
       {
@@ -33,34 +56,35 @@ bool interpret(BFData* data, const char* code, const char* filename) {
     case '?':
       {
         print_mem(data);
-        system("pause");
+        fprintf(stdout, "Press enter to continue...");
+        getchar();
         hide_mem(data);
         break;
       }
     case '"':
       {
         // Scan for string
-        const int filename_start = ++i;
-        int filename_end = i;
-        while (i < len && code[i] != '"') {
+        const size_t filename_start = ++i;
+        size_t filename_end = i;
+        while (i < code_length && code[i] != '"') {
           filename_end++;
           i++;
         }
-        const int size = filename_end - filename_start;
+        const size_t size = filename_end - filename_start;
         // Allocate memory for string
         char* included_filename = (char*)malloc(sizeof(char) * (size + 1));
         if (included_filename == NULL) {
-          fprintf(stderr, "%s:%d ERROR: failed to allocate string\n", filename, i);
+          fprintf(stderr, "%s:%ld ERROR: failed to allocate string\n", filename, i);
           return false;
         }
         // Copy string
         included_filename[size] = '\0';
-        for (int j = filename_start, k = 0; j < filename_end; j += 1, k += 1) {
+        for (size_t j = filename_start, k = 0; j < filename_end; j += 1, k += 1) {
           included_filename[k] = code[j];
         }
         // Interpret included file
         if (!interpret_file(data, included_filename)) {
-          fprintf(stderr, "%s:%d: ERROR: failed to include file: %s\n", filename, i, included_filename);
+          fprintf(stderr, "%s:%ld: ERROR: failed to include file: %s\n", filename, i, included_filename);
           free(included_filename);
           return false;
         }
@@ -73,7 +97,7 @@ bool interpret(BFData* data, const char* code, const char* filename) {
         data->mem_ptr++;
         // Check is pointer out of memory
         if (data->warnings && data->mem_ptr + 1 >= BF_CAPACITY) {
-          fprintf(stderr, "%s:%d: WARNING: pointer go out of memory at char number %d\n", filename, i, i);
+          fprintf(stderr, "%s:%ld: WARNING: pointer go out of memory at char number %ld\n", filename, i, i);
         }
         if (data->mem_ptr > data->max_used_ptr)
           data->max_used_ptr = data->mem_ptr;
@@ -85,18 +109,18 @@ bool interpret(BFData* data, const char* code, const char* filename) {
         data->mem_ptr--;
         // Check is pointer out of memory
         if (data->warnings && data->mem_ptr < 0) {
-          fprintf(stderr, "%s:%d WARNING: pointer go behind the memory, can cause fatal error.\n", filename, i);
+          fprintf(stderr, "%s:%ld WARNING: pointer go behind the memory, can cause fatal error.\n", filename, i);
         }
         break;
       }
     case '+':
       {
         if (!valid_ptr(data)) {
-          fprintf(stderr, "%s:%d ERROR: tried to increment cell which is out of memory, ptr = %d\n", filename, i, data->mem_ptr);
+          fprintf(stderr, "%s:%ld ERROR: tried to increment cell which is out of memory, ptr = %d\n", filename, i, data->mem_ptr);
           return false;
         }
         if (data->memory[data->mem_ptr] == 255) {
-          fprintf(stderr, "%s:%d: ERROR: tried to increment maximal value of single byte, ptr = %d\n",
+          fprintf(stderr, "%s:%ld: ERROR: tried to increment maximal value of single byte, ptr = %d\n",
                   filename, i, data->mem_ptr);
           return false;
         }
@@ -106,11 +130,11 @@ bool interpret(BFData* data, const char* code, const char* filename) {
     case '-':
       {
         if (!valid_ptr(data)) {
-          fprintf(stderr, "%s:%d ERROR: tried to decrement cell which is out of memory, ptr = %d\n", filename, i, data->mem_ptr);
+          fprintf(stderr, "%s:%ld ERROR: tried to decrement cell which is out of memory, ptr = %d\n", filename, i, data->mem_ptr);
           return false;
         }
         if (data->memory[data->mem_ptr] == 0) {
-          fprintf(stderr, "%s:%d: ERROR: tried to decrement minimal value of single byte, ptr = %d\n",
+          fprintf(stderr, "%s:%ld: ERROR: tried to decrement minimal value of single byte, ptr = %d\n",
                   filename, i, data->mem_ptr);
           return false;
         }
@@ -120,7 +144,7 @@ bool interpret(BFData* data, const char* code, const char* filename) {
     case ',':
       {
         if (!valid_ptr(data)) {
-          fprintf(stderr, "%s:%d ERROR: tried to write to cell which is out of memory, ptr = %d\n", filename, i, data->mem_ptr);
+          fprintf(stderr, "%s:%ld ERROR: tried to write to cell which is out of memory, ptr = %d\n", filename, i, data->mem_ptr);
           return false;
         }
         if (data->debug)
@@ -131,18 +155,29 @@ bool interpret(BFData* data, const char* code, const char* filename) {
     case ';':
       {
         if (!valid_ptr(data)) {
-          fprintf(stderr, "%s:%d ERROR: tried to write to cell which is out of memory, ptr = %d\n", filename, i, data->mem_ptr);
+          fprintf(stderr, "%s:%ld ERROR: tried to write to cell which is out of memory, ptr = %d\n", filename, i, data->mem_ptr);
           return false;
         }
         if (data->debug)
           printf("uint8 > ");
-        scanf("%d", data->memory + data->mem_ptr);
+        int temp = 0;
+        int scanned = scanf("%d", &temp);
+        if (scanned != 1) {
+          fprintf(stderr, "%s:%ld ERROR: failed to read uint8 value from standard input.\n", filename, i);
+          return false;
+        }
+        if (temp >= 0 && temp <= 255) {
+          data->memory[data->mem_ptr] = (unsigned char) temp;
+          break;
+        }
+        fprintf(stderr, "%s:%ld ERROR: entered value (%d) is out of range 0-255!\n", filename, i, temp);
+        return false;
         break;
       }
     case '.':
       {
         if (!valid_ptr(data)) {
-          fprintf(stderr, "%s:%d ERROR: tried to write to cell which is out of memory, ptr = %d\n", filename, i, data->mem_ptr);
+          fprintf(stderr, "%s:%ld ERROR: tried to write to cell which is out of memory, ptr = %d\n", filename, i, data->mem_ptr);
           return false;
         }
         putchar(data->memory[data->mem_ptr]);
@@ -151,7 +186,7 @@ bool interpret(BFData* data, const char* code, const char* filename) {
     case ':':
       {
         if (!valid_ptr(data)) {
-          fprintf(stderr, "%s:%d ERROR: tried to write to cell which is out of memory, ptr = %d\n", filename, i, data->mem_ptr);
+          fprintf(stderr, "%s:%ld ERROR: tried to write to cell which is out of memory, ptr = %d\n", filename, i, data->mem_ptr);
           return false;
         }
         printf("%d", data->memory[data->mem_ptr]);
@@ -163,8 +198,8 @@ bool interpret(BFData* data, const char* code, const char* filename) {
           int loop_nesting = 1;
           while (loop_nesting > 0) {
             i++;
-            if (i >= len) {
-              fprintf(stderr, "%s:%d: ERROR: unbalanced '['\n", filename, i);
+            if (i >= code_length) {
+              fprintf(stderr, "%s:%ld: ERROR: unbalanced '['\n", filename, i);
               return false;
             }
             if (code[i] == '[') loop_nesting++;
@@ -173,7 +208,7 @@ bool interpret(BFData* data, const char* code, const char* filename) {
         }
         else {
           if (data->loop_ptr + 1 >= BF_LOOP_STACK) {
-            fprintf(stderr, "%s:%d: ERROR: too many nested loops\n", filename, i);
+            fprintf(stderr, "%s:%ld: ERROR: too many nested loops\n", filename, i);
             return false;
           }
           data->loop_stack[++data->loop_ptr] = i;
@@ -183,7 +218,7 @@ bool interpret(BFData* data, const char* code, const char* filename) {
     case ']':
       {
         if (data->loop_ptr == -1) {
-          fprintf(stderr, "%s:%d: ERROR: unmatched ']'\n", filename, i);
+          fprintf(stderr, "%s:%ld: ERROR: unmatched ']'\n", filename, i);
           return false;
         }
         if (data->memory[data->mem_ptr] != 0) {

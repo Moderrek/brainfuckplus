@@ -5,7 +5,7 @@
 
 #include "state.h"
 
-bool interpret(BFData* data, const char* code, const char* filename);
+bool interpret(BFData* data, const char* code, size_t code_length, const char* filename);
 bool interpret_file(BFData* data, const char* filename);
 
 #endif // INTERPRETER_H_INCLUDED

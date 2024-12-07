@@ -1,5 +1,5 @@
 #ifndef MEMORY_H_INCLUDED
-#define MEMORY_H_INCLUDED
+#define MEMORY_H_INCLUDED 1
 
 #include <stdbool.h>
 
@@ -11,9 +11,9 @@
 #define CLEAR_CURR_LINE "\033[2K"
 #define LINE_UP "\033[F"
 
-void print_mem(BFData* data);
-void hide_mem(BFData* data);
-bool valid_ptr(BFData* data);
-void dump_mem(BFData* data, const char* filename);
+void print_mem(const BFData* data);
+void hide_mem(const BFData* data);
+bool valid_ptr(const BFData* data);
+void dump_mem(const BFData* data, const char* filename);
 
 #endif // MEMORY_H_INCLUDED
