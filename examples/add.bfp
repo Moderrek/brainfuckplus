@@ -1,3 +1,5 @@
-;>;       read two bytes as int
-[-<+>]<   perform add
-:         print result as int
+;>;          read two bytes as int
+[-<+>]<      perform add (moves right value to the left)
+:            print result as int
+>++++++++++. print newline (10) as char
+
